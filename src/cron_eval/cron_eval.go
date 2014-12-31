@@ -1,9 +1,10 @@
 package cron_eval
+
 import (
 	"fmt"
-	"time"
-	"math"
 	"github.com/gorhill/cronexpr"
+	"math"
+	"time"
 )
 
 func GetCurrentMinute(now time.Time) time.Time {
@@ -25,7 +26,7 @@ func GetNextCronRun(cron_line string, current_minute time.Time) time.Time {
 	return nextTime
 }
 
-func EvalCronLine(cron_line string) (bool, bool, int){
+func EvalCronLine(cron_line string) (bool, bool, int) {
 	now := time.Now()
 	var DEBUG = true
 	current_minute := GetCurrentMinute(now)
@@ -33,7 +34,7 @@ func EvalCronLine(cron_line string) (bool, bool, int){
 	next_cron_run := GetNextCronRun(cron_line, next_cron_minute)
 	var run_now = false
 	var run_after = false
-    var sleep_seconds = 0
+	var sleep_seconds = 0
 	if current_minute == next_cron_run {
 		run_now = true
 		sleep_seconds = 0
