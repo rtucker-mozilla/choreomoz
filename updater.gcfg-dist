@@ -1,0 +1,10 @@
+[main]
+dbfile = LOG.db
+debug = true
+cronfile = CRONFILE
+statefile = STATEFILE
+lockfile = LOCKFILE
+scriptpath = scripts
+apiurl = "http://localhost:5000/api"
+# loglevel DEBUG,INFO,WARN,ERROR
+loglevel = DEBUG
