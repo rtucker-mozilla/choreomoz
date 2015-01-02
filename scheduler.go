@@ -52,8 +52,6 @@ func main() {
 	var DB_FILE = fmt.Sprintf("%s/%s", exec_path, config.Main.Dbfile)
 	log.Debug("DB_FILE: ", DB_FILE)
 	var CRONFILE = fmt.Sprintf("%s/%s", exec_path, config.Main.Cronfile)
-	var STATEFILE = fmt.Sprintf("%s/%s", exec_path, config.Main.Statefile)
-	var LOCKFILE = fmt.Sprintf("%s/%s", exec_path, config.Main.Lockfile)
 	var SCRIPTPATH = fmt.Sprintf("%s/%s", exec_path, config.Main.Scriptpath)
 	var APIURL = config.Main.APIUrl
 	log.Debug("GUIDHash: ", GUIDHash(HOSTNAME))
@@ -71,20 +69,20 @@ func main() {
 		panic("Unable to open existing database")
 	}
 	state, _ := auto_updater.GetMostRecentState(db1)
-	log.Error(state)
-	var currently_locked = util.HasLockFile(LOCKFILE)
-	if currently_locked == true {
-		if util.HasStateFile(STATEFILE) {
-			log.Debug("There exists a statefile")
-		}
+	log.Debug(state)
+	var current_locked = false
+	start_state, start_state_err := auto_updater.GetMostRecentState(db1)
+	if start_state_err != nil && start_state.Finished == 0 {
+		current_locked = true
 	}
+	log.Debug("At INIT: current_locked:", current_locked)
 	if !util.HasScriptPath(SCRIPTPATH) {
 		log.Error(fmt.Sprintf("Script Path %s does not exist.", SCRIPTPATH))
 		os.Exit(2)
 	}
 	go auto_updater.DBPoll(db1, HOSTNAME, APIURL, 0)
 	for {
-		util.DeleteLockFile(LOCKFILE)
+		log.Debug("In LOOP: current_locked:", current_locked)
 		cron_line, cron_err := util.ReadCronFile(CRONFILE)
 		if cron_err != nil {
 			log.Debug(fmt.Sprintf("%s", cron_err))
@@ -109,6 +107,9 @@ func main() {
 		UpdateScripts := []parse_update_script.UpdateScript{}
 		for i := 0; i < len(scripts); i++ {
 			script_path := scripts[i]
+			if !util.ScriptValid(script_path) {
+				continue
+			}
 			var uf parse_update_script.UpdateScriptFile
 			var us parse_update_script.UpdateScript
 			uf.FilePath = script_path
