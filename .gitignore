@@ -29,3 +29,15 @@ CRONFILE
 STATEFILE
 LOG.db
 scripts/*.sh
+src/bitbucket.org/
+src/github.com/
+src/code.google.com/
+auto_updater
+coverage.out
+# Compiled binaries
+runner
+scheduler
+# Workspace/IDE Settings
+auto_updater.sublime-project
+auto_updater.sublime-workspace
+.idea/
