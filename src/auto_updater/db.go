@@ -46,7 +46,8 @@ func CreateDbIfNotExists(db_file string) bool {
 			insert into version (version) values (1);
 			create table state (
 				id integer not null primary key,
-				update_guid text,
+				update_id int,
+				update_guid text default 'unused',
 				last_script_completed text,
 				finished int default 0
 			);
@@ -54,6 +55,11 @@ func CreateDbIfNotExists(db_file string) bool {
 				id integer not null primary key,
 				update_id int,
 				update_guid text
+			);
+			create table config (
+				id integer not null primary key,
+				name text,
+				value text
 			);
 			`
 		_, err = db.Exec(sqlStmt)

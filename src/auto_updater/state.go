@@ -76,6 +76,6 @@ func GetMostRecentState(db *sql.DB) (State, error) {
 		}
 	}()
 	var state State
-	err := db.QueryRow("select id, update_guid, last_script_completed, finished from state order by id desc limit 1").Scan(&state)
+	err := db.QueryRow("select id, update_guid, last_script_completed, finished from state order by id desc limit 1").Scan(&state.Id, &state.Update_guid, &state.Last_script_completed, &state.Finished)
 	return state, err
 }
