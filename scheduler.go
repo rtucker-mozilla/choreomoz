@@ -102,12 +102,12 @@ func main() {
 		}
 
 		run_now, run_after, sleep_seconds := cron_eval.EvalCronLine(cron_line)
-		if run_now == false && run_after == false {
+		if run_now == false && run_after == false && current_locked == false {
 			time.Sleep(time.Duration(sleep_seconds) * time.Second)
 			continue
 		}
 
-		if run_now == false && run_after == true {
+		if run_now == false && run_after == true && current_locked == false {
 			time.Sleep(time.Duration(sleep_seconds) * time.Second)
 		}
 
