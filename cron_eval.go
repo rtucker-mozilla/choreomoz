@@ -1,4 +1,4 @@
-package cron_eval
+package main
 
 import (
 	"fmt"

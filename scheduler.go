@@ -1,7 +1,6 @@
 package main
 
 import (
-	"cron_eval"
 	"database/sql"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
@@ -91,7 +90,7 @@ func main() {
 			os.Exit(2)
 		}
 
-		run_now, run_after, sleep_seconds := cron_eval.EvalCronLine(cron_line)
+		run_now, run_after, sleep_seconds := EvalCronLine(cron_line)
 		if run_now == false && run_after == false && current_locked == false {
 			time.Sleep(time.Duration(sleep_seconds) * time.Second)
 			continue
