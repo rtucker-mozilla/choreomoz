@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"time"
-	"util"
 )
 
 type UpdateScriptResponse struct {
@@ -80,14 +79,14 @@ func main() {
 		}
 	}
 	log.Debug("At INIT: current_locked:", current_locked)
-	if !util.HasScriptPath(SCRIPTPATH) {
+	if !HasScriptPath(SCRIPTPATH) {
 		log.Error(fmt.Sprintf("Script Path %s does not exist.", SCRIPTPATH))
 		os.Exit(2)
 	}
 	go auto_updater.DBPoll(db1, HOSTNAME, APIURL, 0)
 	for {
 		log.Debug("In LOOP: current_locked:", current_locked)
-		cron_line, cron_err := util.ReadCronFile(CRONFILE)
+		cron_line, cron_err := ReadCronFile(CRONFILE)
 		if cron_err != nil {
 			log.Debug(fmt.Sprintf("%s", cron_err))
 			os.Exit(2)
@@ -109,7 +108,7 @@ func main() {
 		var run_next = false
 		for i := 0; i < len(scripts); i++ {
 			script_path := scripts[i]
-			if !util.ScriptValid(script_path) {
+			if !ScriptValid(script_path) {
 				continue
 			}
 			if run_next == false && current_locked && script_path != start_state.Last_script_completed && start_state.Last_script_completed != "" {

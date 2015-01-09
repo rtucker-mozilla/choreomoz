@@ -3,8 +3,8 @@ package auto_updater
 import (
 	"database/sql"
 	"fmt"
+	"main"
 	"time"
-	"util"
 )
 
 type LogObject struct {
@@ -27,7 +27,7 @@ type UpdateIdToUpdateGuid struct {
 // CreateDbIfNotExists creates a sqlite database at db_file path if it doesn't exist.
 // returns a bool of the success of creating the database file.
 func CreateDbIfNotExists(db_file string) bool {
-	if !util.FileExists(db_file) {
+	if !main.FileExists(db_file) {
 		db, err := sql.Open("sqlite3", db_file)
 		defer db.Close()
 		if err != nil {
@@ -47,7 +47,7 @@ func CreateDbIfNotExists(db_file string) bool {
 			create table state (
 				id integer not null primary key,
 				update_id int,
-				update_guid text default 'unused',
+				update_guid text default 'unused7G',
 				last_script_completed text,
 				finished int default 0
 			);
