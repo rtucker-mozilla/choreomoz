@@ -25,14 +25,17 @@ type UpdateScriptResponse struct {
 }
 
 // SystemReboot executes a shell command to reboot the host
-func SystemReboot() {
+func SystemReboot(exec_reboot bool) bool {
 	// Sleep for 2 seconds to give time for the API post
-	time.Sleep(2 * time.Second)
-	cmd := exec.Command("/sbin/shutdown", "-r", "now")
-	err := cmd.Run()
-	if err != nil {
-		panic(err)
+	if exec_reboot == true {
+		cmd := exec.Command("/sbin/shutdown", "-r", "now")
+		err := cmd.Run()
+		if err != nil {
+			panic(err)
+		}
 	}
+	time.Sleep(2 * time.Second)
+	return exec_reboot
 }
 
 // Main entry point
@@ -164,7 +167,7 @@ func main() {
 				panic(exit_code_to_i_err)
 			}
 			if exit_code_to_i == ret_code {
-				SystemReboot()
+				SystemReboot(true)
 				should_reboot = true
 			}
 
