@@ -1,4 +1,4 @@
-package auto_updater
+package main
 
 import (
 	"code.google.com/p/gcfg"

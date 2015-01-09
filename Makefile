@@ -6,7 +6,7 @@ GOGETTER := GOPATH="$(shell pwd)" GOOS=$(OS) GOARCH=$(ARCH) go get -u
 all: clean go_get_deps scheduler
 
 scheduler:
-	$(GO) build $(GOOPTS) -o bin/scheduler scheduler.go scheduler_funcs.go util.go
+	$(GO) build $(GOOPTS) -o bin/scheduler scheduler.go scheduler_funcs.go util.go db.go restclient.go log.go state.go commands.go config.go
 
 go_get_deps:
 	$(GOGETTER) github.com/Sirupsen/logrus

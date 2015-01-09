@@ -1,7 +1,6 @@
 package main
 
 import (
-	"auto_updater"
 	"crypto/sha1"
 	"database/sql"
 	"encoding/hex"
@@ -25,11 +24,11 @@ func GUIDHash(hostname string) string {
 // SystemReboot executes a shell command to reboot the host
 
 func GetSystemId(API_URL string, hostname string) (int, error) {
-	log := auto_updater.GetLogger()
+	log := GetLogger()
 	// Add function here to pull from local db
 	var from_cache = false
 	log.Debug("from_cache: ", from_cache)
-	rest_system_id, rest_err := auto_updater.GetSystemId(API_URL, hostname)
+	rest_system_id, rest_err := APIGetSystemId(API_URL, hostname)
 	// Set value to local db
 	return rest_system_id, rest_err
 }
@@ -95,7 +94,7 @@ func DBSetLastCompletedScript(db *sql.DB, update_id int, script string) bool {
 }
 
 func ProcessEntry(us chan UpdateScriptResponse, db *sql.DB) {
-	log := auto_updater.GetLogger()
+	log := GetLogger()
 	s := <-us
 	log.Debug("\n===== START LOG CAPTURE OF ExecCommand =====")
 	log.Debug("ret_code: ", s.ret_code)
@@ -104,7 +103,7 @@ func ProcessEntry(us chan UpdateScriptResponse, db *sql.DB) {
 	log.Debug("===== END LOG CAPTURE OF ExecCommand =====\n")
 	var update_id = 0
 	if s.is_start {
-		update_id, _ := auto_updater.CreateSytemUpdate(s.api_url, s.system_id)
+		update_id, _ := CreateSytemUpdate(s.api_url, s.system_id)
 		DBStartUpdate(db, update_id)
 		log.Error("CreateSystemUpdate")
 	}
@@ -117,7 +116,7 @@ func ProcessEntry(us chan UpdateScriptResponse, db *sql.DB) {
 	}
 	DBSetLastCompletedScript(db, update_id, s.update_script.FilePath)
 	if s.is_end {
-		auto_updater.FinishSystemUpdate(s.api_url, s.system_id)
+		FinishSystemUpdate(s.api_url, s.system_id)
 		// Here we either delete from the database or mark as completed
 		// Delete is probably easier
 		DBEndUpdate(db, update_id)

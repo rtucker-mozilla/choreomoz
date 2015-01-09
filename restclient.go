@@ -1,4 +1,4 @@
-package auto_updater
+package main
 
 import (
 	"errors"
@@ -42,7 +42,7 @@ type CreateSystemUpdateResp struct {
   "total_count": 1
 }
 **************************************************/
-func GetSystemId(url string, hostname string) (int, error) {
+func APIGetSystemId(url string, hostname string) (int, error) {
 	log := GetLogger()
 	log.Debug("Enter into GetSystemId")
 	defer func() {
@@ -117,7 +117,7 @@ func FinishSystemUpdate(url string, system_id int) (bool, error) {
 }
 
 // LogCapture sends the log update to the centralized API
-func LogCapture(url string, system_id int, system_update_id int, log_object *LogObject) bool {
+func APILogCapture(url string, system_id int, system_update_id int, log_object *LogObject) bool {
 	payload := struct {
 		Return_code int    `json:"return_code"`
 		Stdout      string `json:"stdout"`

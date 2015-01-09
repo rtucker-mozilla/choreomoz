@@ -1,7 +1,6 @@
 package main
 
 import (
-	"auto_updater"
 	"cron_eval"
 	"database/sql"
 	"fmt"
@@ -39,11 +38,11 @@ func SystemReboot() {
 
 // Main entry point
 func main() {
-	log := auto_updater.GetLogger()
+	log := GetLogger()
 
 	exec_path, _ := os.Getwd()
 	HOSTNAME, _ := os.Hostname()
-	config, config_err := auto_updater.ParseConfig()
+	config, config_err := ParseConfig()
 	if config_err != nil {
 		log.Error("Unable to open config file")
 	}
@@ -58,7 +57,7 @@ func main() {
 	}
 	log.Debug("System ID:", system_id)
 	log.Debug("GUIDHash: ", GUIDHash(HOSTNAME))
-	db_created := auto_updater.CreateDbIfNotExists(DB_FILE)
+	db_created := CreateDbIfNotExists(DB_FILE)
 	if db_created {
 		log.Info("DB Created at path: ", DB_FILE)
 	}
@@ -66,10 +65,10 @@ func main() {
 	if db_open_err != nil {
 		panic("Unable to open existing database")
 	}
-	state, _ := auto_updater.GetMostRecentState(db1)
+	state, _ := GetMostRecentState(db1)
 	log.Debug(state)
 	var current_locked = false
-	start_state, start_state_err := auto_updater.GetMostRecentState(db1)
+	start_state, start_state_err := GetMostRecentState(db1)
 	if start_state.Finished == 0 && start_state.Id > 0 {
 		current_locked = true
 	}
@@ -83,7 +82,7 @@ func main() {
 		log.Error(fmt.Sprintf("Script Path %s does not exist.", SCRIPTPATH))
 		os.Exit(2)
 	}
-	go auto_updater.DBPoll(db1, HOSTNAME, APIURL, 0)
+	go DBPoll(db1, HOSTNAME, APIURL, 0)
 	for {
 		log.Debug("In LOOP: current_locked:", current_locked)
 		cron_line, cron_err := ReadCronFile(CRONFILE)
@@ -139,7 +138,7 @@ func main() {
 				continue
 			}
 			exec_script := UpdateScripts[i].FilePath
-			ret_code, stdout, stderr := auto_updater.ExecCommand(exec_script)
+			ret_code, stdout, stderr := ExecCommand(exec_script)
 			usr := UpdateScriptResponse{}
 			usr.ret_code = ret_code
 			usr.stderr = stderr

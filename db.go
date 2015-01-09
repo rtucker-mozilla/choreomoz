@@ -1,9 +1,8 @@
-package auto_updater
+package main
 
 import (
 	"database/sql"
 	"fmt"
-	"main"
 	"time"
 )
 
@@ -27,7 +26,7 @@ type UpdateIdToUpdateGuid struct {
 // CreateDbIfNotExists creates a sqlite database at db_file path if it doesn't exist.
 // returns a bool of the success of creating the database file.
 func CreateDbIfNotExists(db_file string) bool {
-	if !main.FileExists(db_file) {
+	if !FileExists(db_file) {
 		db, err := sql.Open("sqlite3", db_file)
 		defer db.Close()
 		if err != nil {
@@ -178,7 +177,7 @@ func DBPoll(db *sql.DB, HOSTNAME string, API_URL string, system_id int) {
 					current_update_guid = lo.update_guid
 				}
 				log.Error("Logging System Script Output")
-				is_logged := LogCapture(API_URL, system_id, system_update_id, lo)
+				is_logged := APILogCapture(API_URL, system_id, system_update_id, lo)
 				if is_logged == true {
 					system_log_id_slice = append(system_log_id_slice, lo.id)
 					current_update_guid = lo.update_guid
