@@ -48,8 +48,6 @@ func main() {
 	if config_err != nil {
 		log.Error("Unable to open config file")
 	}
-	log.Debug("Config Loaded")
-	log.Debug(HOSTNAME)
 	var DB_FILE = fmt.Sprintf("%s/%s", exec_path, config.Main.Dbfile)
 	log.Debug("DB_FILE: ", DB_FILE)
 	var CRONFILE = fmt.Sprintf("%s/%s", exec_path, config.Main.Cronfile)
@@ -57,29 +55,23 @@ func main() {
 	var APIURL = config.Main.APIUrl
 	system_id, system_id_err := GetSystemId(APIURL, HOSTNAME)
 	if system_id_err != nil {
-		log.Error("Could not retrieve system ID")
+		log.Warn("Could not retrieve system ID")
 	}
-	log.Error("System ID:", system_id)
+	log.Debug("System ID:", system_id)
 	log.Debug("GUIDHash: ", GUIDHash(HOSTNAME))
 	db_created := auto_updater.CreateDbIfNotExists(DB_FILE)
 	if db_created {
 		log.Info("DB Created at path: ", DB_FILE)
 	}
-	//	db, db_open_err := sql.Open("sqlite3", DB_FILE)
 	db1, db_open_err := sql.Open("sqlite3", fmt.Sprintf("file:%s?cache=shared&mode=rwc", DB_FILE))
-	//db2, db_open_err2 := sql.Open("sqlite3", fmt.Sprintf("file:%s?cache=shared&mode=rwc", DB_FILE))
 	if db_open_err != nil {
 		panic("Unable to open existing database")
 	}
-	/*if db_open_err2 != nil {
-		panic("Unable to open existing database")
-	}*/
 	state, _ := auto_updater.GetMostRecentState(db1)
 	log.Debug(state)
 	var current_locked = false
 	start_state, start_state_err := auto_updater.GetMostRecentState(db1)
 	if start_state.Finished == 0 && start_state.Id > 0 {
-		log.Error("asdf", start_state.Id)
 		current_locked = true
 	}
 	if start_state_err != nil && start_state.Finished == 0 {
@@ -157,7 +149,6 @@ func main() {
 			usr.db = db1
 			usr.system_id = system_id
 			usr.api_url = APIURL
-			log.Error("current_locked:", current_locked)
 			if i == 0 && !current_locked {
 				usr.is_start = true
 			} else {
@@ -170,9 +161,7 @@ func main() {
 			}
 			exec_chan <- usr
 			go ProcessEntry(exec_chan, db1)
-			//auto_updater.ProcessLog(update_guid, ret_code, stdout, stderr, &UpdateScripts[i], db2)
 			exit_code_to_i, exit_code_to_i_err := strconv.Atoi(UpdateScripts[i].ScriptExitCodeReboot)
-			//state.SetLastScriptCompleted(db1, exec_script)
 
 			if exit_code_to_i_err != nil {
 				panic(exit_code_to_i_err)
@@ -184,7 +173,5 @@ func main() {
 
 		}
 		current_locked = false
-		//state.Finish(db1)
-		//time.Sleep(10 * time.Minute)
 	}
 }
