@@ -15,5 +15,5 @@ go_get_deps:
 	$(GOGETTER) github.com/mattn/go-sqlite3
 
 clean:
-	rm -rf bin src/github.com
+	rm -rf bin src/github.com src/bitbucket.org src/code.google.com
 
