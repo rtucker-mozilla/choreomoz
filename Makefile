@@ -13,6 +13,7 @@ go_get_deps:
 	$(GOGETTER) github.com/gorhill/cronexpr
 	$(GOGETTER) github.com/jmcvetta/napping
 	$(GOGETTER) github.com/mattn/go-sqlite3
+	$(GOGETTER) code.google.com/p/gcfg
 
 clean:
 	rm -rf bin src/github.com src/bitbucket.org src/code.google.com
