@@ -21,7 +21,7 @@ type Config struct {
 
 func ParseConfig() (Config, error) {
 	exec_path, _ := os.Getwd()
-	var CONFIGPATH = fmt.Sprintf("%s/updater.gcfg", exec_path)
+	var CONFIGPATH = fmt.Sprintf("%s/chorizo.gcfg", exec_path)
 	var cfg Config
 	err := gcfg.ReadFileInto(&cfg, CONFIGPATH)
 	if err != nil {
