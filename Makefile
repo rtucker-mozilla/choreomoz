@@ -1,12 +1,12 @@
 GO := GOPATH=$(shell go env GOROOT)/bin:"$(shell pwd)" GOOS=$(OS) GOARCH=$(ARCH) go
 #GO := GOPATH=$(shell go env GOROOT)/bin:"$(shell pwd)" go
 GOGETTER := GOPATH="$(shell pwd)" GOOS=$(OS) GOARCH=$(ARCH) go get -u
-.PHONY: all scheduler
+.PHONY: all chorizo
 
-all: clean go_get_deps scheduler
+all: clean go_get_deps chorizo
 
-scheduler:
-	$(GO) build $(GOOPTS) -o bin/scheduler scheduler.go scheduler_funcs.go util.go db.go restclient.go log.go state.go commands.go config.go cron_eval.go
+chorizo:
+	$(GO) build $(GOOPTS) -o bin/chorizo chorizo.go chorizo_funcs.go util.go db.go restclient.go log.go state.go commands.go config.go cron_eval.go
 
 go_get_deps:
 	$(GOGETTER) github.com/Sirupsen/logrus

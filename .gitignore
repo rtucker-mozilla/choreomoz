@@ -37,6 +37,7 @@ coverage.out
 # Compiled binaries
 runner
 scheduler
+chorizo
 # Workspace/IDE Settings
 auto_updater.sublime-project
 auto_updater.sublime-workspace
