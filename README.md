@@ -10,8 +10,8 @@ simply run make
 
 External Requirements
 =====================
-github.com/Sirupsen/logrus
-github.com/gorhill/cronexpr
-github.com/jmcvetta/napping
-github.com/mattn/go-sqlite3
-code.google.com/p/gcfg
+github.com/Sirupsen/logrus  
+github.com/gorhill/cronexpr  
+github.com/jmcvetta/napping  
+github.com/mattn/go-sqlite3  
+code.google.com/p/gcfg  
