@@ -42,7 +42,10 @@ func SystemReboot(exec_reboot bool) bool {
 func main() {
 	log := GetLogger()
 
-	exec_path, _ := os.Getwd()
+	//exec_path, _ := os.Getwd()
+	// In https://github.com/rtucker-mozilla/chorizo/issues/15
+	// going to specify a specific config file path
+	exec_path := "/etc/chorizo"
 	HOSTNAME, _ := os.Hostname()
 	config, config_err := ParseConfig()
 	if config_err != nil {
