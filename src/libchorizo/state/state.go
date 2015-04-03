@@ -1,4 +1,4 @@
-package main
+package libchorizo
 
 import (
 	"database/sql"
@@ -69,12 +69,6 @@ func GetStateByGUID(db *sql.DB, guid string) (State, error) {
 
 // GetStateByGUID returns a State struct as found by it's guid
 func GetMostRecentState(db *sql.DB) (State, error) {
-	log := GetLogger()
-	defer func() {
-		if e := recover(); e != nil {
-			log.Error(e)
-		}
-	}()
 	var state State
 	err := db.QueryRow("select id, update_guid, last_script_completed, finished from state order by id desc limit 1").Scan(&state.Id, &state.Update_guid, &state.Last_script_completed, &state.Finished)
 	return state, err

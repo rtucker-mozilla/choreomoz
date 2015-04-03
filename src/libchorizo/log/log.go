@@ -1,4 +1,4 @@
-package main
+package libchorizo
 
 import (
 	"database/sql"
@@ -8,10 +8,11 @@ import (
 	"parse_update_script"
 	"strings"
 	"time"
+	"libchorizo/config"
 )
 
 func GetLogger() *logrus.Logger {
-	config, _ := ParseConfig()
+	config, _ := libchorizo.ParseConfig()
 	var level_string = config.Main.Loglevel
 	log := logrus.New()
 	switch level_string {
