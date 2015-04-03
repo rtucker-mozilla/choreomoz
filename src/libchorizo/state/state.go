@@ -70,9 +70,9 @@ func GetStateByGUID(db *sql.DB, guid string) (State, error) {
 
 // GetStateByGUID returns a State struct as found by it's guid
 func GetMostRecentState(db *sql.DB) (State, error) {
-	s_log := log.GetLogger()
 	defer func() {
 		if e := recover(); e != nil {
+			s_log := log.GetLogger()
 			s_log.Error(e)
 		}
 	}()
