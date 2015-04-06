@@ -3,14 +3,13 @@ package libchorizo
 import (
 	"database/sql"
 	"fmt"
-	"time"
 	log "libchorizo/log"
-	util "libchorizo/util"
-	restclient "libchorizo/restclient"
 	logobject "libchorizo/logobject"
+	restclient "libchorizo/restclient"
 	state "libchorizo/state"
+	util "libchorizo/util"
+	"time"
 )
-
 
 type UpdateIdToUpdateGuid struct {
 	id          int
@@ -21,7 +20,7 @@ type UpdateIdToUpdateGuid struct {
 // CreateDbIfNotExists creates a sqlite database at db_file path if it doesn't exist.
 // returns a bool of the success of creating the database file.
 func CreateDbIfNotExists(db_file string) bool {
-	if util.FileExists(db_file) == true {
+	if util.FileExists(db_file) == false {
 		db, err := sql.Open("sqlite3", db_file)
 		defer db.Close()
 		if err != nil {

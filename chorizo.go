@@ -4,14 +4,14 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
+	config "libchorizo/config"
+	db "libchorizo/db"
+	log "libchorizo/log"
+	state "libchorizo/state"
+	util "libchorizo/util"
 	"os"
 	"os/exec"
 	"parse_update_script"
-	state "libchorizo/state"
-	db "libchorizo/db"
-	log "libchorizo/log"
-	config "libchorizo/config"
-	util "libchorizo/util"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -28,6 +28,7 @@ type UpdateScriptResponse struct {
 	db            *sql.DB
 	api_url       string
 }
+
 // SystemReboot executes a shell command to reboot the host
 func SystemReboot(exec_reboot bool) bool {
 	// Sleep for 2 seconds to give time for the API post
@@ -41,7 +42,6 @@ func SystemReboot(exec_reboot bool) bool {
 	time.Sleep(2 * time.Second)
 	return exec_reboot
 }
-
 
 // Main entry point
 func main() {
@@ -106,10 +106,7 @@ func main() {
 		}
 
 		if run_now == false && run_after == true && current_locked == false {
-			time.Sleep(time.Duration(sleep_seconds) * time.Second)
-			if time.Second == 59 {
-				time.Sleep(1 * time.Second)
-			}
+			time.Sleep(time.Duration(sleep_seconds+1) * time.Second)
 		}
 
 		scripts, _ := filepath.Glob(fmt.Sprintf("%s/*", SCRIPTPATH))
@@ -181,6 +178,7 @@ func main() {
 			}
 
 		}
+		time.Sleep(60 * time.Second)
 		current_locked = false
 	}
 }
