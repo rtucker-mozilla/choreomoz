@@ -5,6 +5,9 @@ GOGETTER := GOPATH="$(shell pwd)" GOOS=$(OS) GOARCH=$(ARCH) go get -u
 
 all: clean go_get_deps chorizo
 
+test_cron_eval:
+	$(GO) test cron_eval_test.go cron_eval.go
+
 chorizo:
 	$(GO) build $(GOOPTS) -o bin/chorizo chorizo.go chorizo_funcs.go commands.go cron_eval.go
 

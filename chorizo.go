@@ -107,6 +107,9 @@ func main() {
 
 		if run_now == false && run_after == true && current_locked == false {
 			time.Sleep(time.Duration(sleep_seconds) * time.Second)
+			if time.Second == 59 {
+				time.Sleep(1 * time.Second)
+			}
 		}
 
 		scripts, _ := filepath.Glob(fmt.Sprintf("%s/*", SCRIPTPATH))

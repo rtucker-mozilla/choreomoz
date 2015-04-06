@@ -1,4 +1,6 @@
 package main
+// To run this test
+// go test cron_eval_test.go cron_eval.go
 
 import (
 	"testing"
