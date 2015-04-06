@@ -4,6 +4,11 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
+	config "libchorizo/config"
+	db "libchorizo/db"
+	log "libchorizo/log"
+	state "libchorizo/state"
+	util "libchorizo/util"
 	"os"
 	"os/exec"
 	"parse_update_script"
@@ -40,14 +45,14 @@ func SystemReboot(exec_reboot bool) bool {
 
 // Main entry point
 func main() {
-	log := GetLogger()
+	log := log.GetLogger()
 
 	//exec_path, _ := os.Getwd()
 	// In https://github.com/rtucker-mozilla/chorizo/issues/15
 	// going to specify a specific config file path
 	exec_path := "/etc/chorizo"
 	HOSTNAME, _ := os.Hostname()
-	config, config_err := ParseConfig()
+	config, config_err := config.ParseConfig()
 	if config_err != nil {
 		log.Error("Unable to open config file")
 	}
@@ -62,7 +67,7 @@ func main() {
 	}
 	log.Debug("System ID:", system_id)
 	log.Debug("GUIDHash: ", GUIDHash(HOSTNAME))
-	db_created := CreateDbIfNotExists(DB_FILE)
+	db_created := db.CreateDbIfNotExists(DB_FILE)
 	if db_created {
 		log.Info("DB Created at path: ", DB_FILE)
 	}
@@ -70,10 +75,8 @@ func main() {
 	if db_open_err != nil {
 		panic("Unable to open existing database")
 	}
-	state, _ := GetMostRecentState(db1)
-	log.Debug(state)
 	var current_locked = false
-	start_state, start_state_err := GetMostRecentState(db1)
+	start_state, start_state_err := state.GetMostRecentState(db1)
 	if start_state.Finished == 0 && start_state.Id > 0 {
 		current_locked = true
 	}
@@ -83,14 +86,14 @@ func main() {
 		}
 	}
 	log.Debug("At INIT: current_locked:", current_locked)
-	if !HasScriptPath(SCRIPTPATH) {
+	if !util.HasScriptPath(SCRIPTPATH) {
 		log.Error(fmt.Sprintf("Script Path %s does not exist.", SCRIPTPATH))
 		os.Exit(2)
 	}
-	go DBPoll(db1, HOSTNAME, APIURL, 0)
+	go db.DBPoll(db1, HOSTNAME, APIURL, 0)
 	for {
 		log.Debug("In LOOP: current_locked:", current_locked)
-		cron_line, cron_err := ReadCronFile(CRONFILE)
+		cron_line, cron_err := util.ReadCronFile(CRONFILE)
 		if cron_err != nil {
 			log.Debug(fmt.Sprintf("%s", cron_err))
 			os.Exit(2)
@@ -103,7 +106,7 @@ func main() {
 		}
 
 		if run_now == false && run_after == true && current_locked == false {
-			time.Sleep(time.Duration(sleep_seconds) * time.Second)
+			time.Sleep(time.Duration(sleep_seconds+1) * time.Second)
 		}
 
 		scripts, _ := filepath.Glob(fmt.Sprintf("%s/*", SCRIPTPATH))
@@ -112,7 +115,7 @@ func main() {
 		var run_next = false
 		for i := 0; i < len(scripts); i++ {
 			script_path := scripts[i]
-			if !ScriptValid(script_path) {
+			if !util.ScriptValid(script_path) {
 				continue
 			}
 			if run_next == false && current_locked && script_path != start_state.Last_script_completed && start_state.Last_script_completed != "" {
@@ -175,6 +178,7 @@ func main() {
 			}
 
 		}
+		time.Sleep(60 * time.Second)
 		current_locked = false
 	}
 }

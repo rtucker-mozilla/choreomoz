@@ -1,4 +1,4 @@
-package main
+package libchorizo
 
 import (
 	"errors"
@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 )
+
 
 func FileExists(filename string) bool {
 	if _, err := os.Stat(filename); err == nil {

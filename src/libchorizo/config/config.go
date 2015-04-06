@@ -1,4 +1,4 @@
-package main
+package libchorizo
 
 import (
 	"code.google.com/p/gcfg"

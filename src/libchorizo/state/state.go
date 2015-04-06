@@ -1,7 +1,8 @@
-package main
+package libchorizo
 
 import (
 	"database/sql"
+	log "libchorizo/log"
 )
 
 type State struct {
@@ -69,10 +70,10 @@ func GetStateByGUID(db *sql.DB, guid string) (State, error) {
 
 // GetStateByGUID returns a State struct as found by it's guid
 func GetMostRecentState(db *sql.DB) (State, error) {
-	log := GetLogger()
 	defer func() {
 		if e := recover(); e != nil {
-			log.Error(e)
+			s_log := log.GetLogger()
+			s_log.Error(e)
 		}
 	}()
 	var state State
