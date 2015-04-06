@@ -5,12 +5,13 @@ import (
 	"os/exec"
 	"strings"
 	"syscall"
+	log "libchorizo/log"
 )
 
 // ExecCommand executes the provided command string.
 // It returns the exit_code, stdout, stderr.
 func ExecCommand(cmd_string string) (int, string, string) {
-	log := GetLogger()
+	log := log.GetLogger()
 	log.Error("cmd_string:", cmd_string)
 	var exit_code = 0
 	cmd := exec.Command(cmd_string)

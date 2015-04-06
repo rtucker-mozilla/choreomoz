@@ -1,9 +1,11 @@
-package main
+package libchorizo
 
 import (
 	"errors"
 	"fmt"
 	"github.com/jmcvetta/napping"
+	log "libchorizo/log"
+	logobject "libchorizo/logobject"
 )
 
 type SystemIdResp struct {
@@ -43,7 +45,7 @@ type CreateSystemUpdateResp struct {
 }
 **************************************************/
 func APIGetSystemId(url string, hostname string) (int, error) {
-	log := GetLogger()
+	log := log.GetLogger()
 	log.Debug("Enter into GetSystemId")
 	defer func() {
 		if e := recover(); e != nil {
@@ -74,7 +76,7 @@ func APIGetSystemId(url string, hostname string) (int, error) {
 }
 *****************/
 func CreateSytemUpdate(url string, system_id int) (int, error) {
-	log := GetLogger()
+	log := log.GetLogger()
 	log.Debug("Enter into CreateSystemUpdate")
 	defer func() {
 		if e := recover(); e != nil {
@@ -95,7 +97,7 @@ func CreateSytemUpdate(url string, system_id int) (int, error) {
 }
 
 func FinishSystemUpdate(url string, system_id int) (bool, error) {
-	log := GetLogger()
+	log := log.GetLogger()
 	defer func() {
 		if e := recover(); e != nil {
 			log.Error(e)
@@ -117,14 +119,14 @@ func FinishSystemUpdate(url string, system_id int) (bool, error) {
 }
 
 // LogCapture sends the log update to the centralized API
-func APILogCapture(url string, system_id int, system_update_id int, log_object *LogObject) bool {
+func APILogCapture(url string, system_id int, system_update_id int, log_object *logobject.LogObject) bool {
 	payload := struct {
 		Return_code int    `json:"return_code"`
 		Stdout      string `json:"stdout"`
 		Stderr      string `json:"stderr"`
 		System_id   int    `json:"system_id"`
 	}{}
-	log := GetLogger()
+	log := log.GetLogger()
 	return_value := true
 	var final_url = fmt.Sprintf("%s/logcapture/", url)
 	log.Debug("URL:", url)
@@ -133,9 +135,9 @@ func APILogCapture(url string, system_id int, system_update_id int, log_object *
 	log.Debug("system_update_id:", system_update_id)
 	log.Debug("log_object:", log_object)
 	payload.System_id = system_id
-	payload.Stdout = log_object.stdout
-	payload.Stderr = log_object.stderr
-	payload.Return_code = log_object.return_code
+	payload.Stdout = log_object.Stdout
+	payload.Stderr = log_object.Stderr
+	payload.Return_code = log_object.Return_code
 	resp, err := napping.Post(final_url, &payload, nil, nil)
 	if err != nil {
 		return_value = false
