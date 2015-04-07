@@ -1,11 +1,11 @@
 package main
 
 import (
-	"github.com/gorhill/cronexpr"
-	"math"
 	"fmt"
-	"time"
+	"github.com/gorhill/cronexpr"
 	log "libchorizo/log"
+	"math"
+	"time"
 )
 
 func GetCurrentMinute(now time.Time) time.Time {
