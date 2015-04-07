@@ -1,10 +1,11 @@
 package main
+
 // To run this test
 // go test cron_eval_test.go cron_eval.go
 
 import (
-	"testing"
 	"fmt"
+	"testing"
 	"time"
 )
 
@@ -20,34 +21,34 @@ func TestCronRunEveryMinuteEveryDay(t *testing.T) {
 	}
 }
 
-func TestCalcSleepSecondsInput1(t *testing.T){
+func TestCalcSleepSecondsInput1(t *testing.T) {
 	r_sec := CalcSleepSeconds(1)
 	if r_sec != 3 {
 		t.Error("Sleep seconds should return 3 if input is 1.")
 	}
 }
 
-func TestCalcSleepSecondsInput3(t *testing.T){
+func TestCalcSleepSecondsInput3(t *testing.T) {
 	r_sec := CalcSleepSeconds(3)
 	if r_sec != 3 {
 		t.Error("Sleep seconds should return 3 if input is 3.")
 	}
 }
 
-func TestCalcSleepSecondsInput4(t *testing.T){
+func TestCalcSleepSecondsInput4(t *testing.T) {
 	r_sec := CalcSleepSeconds(4)
 	if r_sec != 4 {
 		t.Error("Sleep seconds should return 4 if input is 4.")
 	}
 }
 
-func TestCalcSleepSecondsInput86400(t *testing.T){
+func TestCalcSleepSecondsInput86400(t *testing.T) {
 	r_sec := CalcSleepSeconds(86400)
 	if r_sec != 86400 {
 		t.Error("Sleep seconds should return 86400 if input is 86400.")
 	}
 }
-func TestGetCurrentMinute(t *testing.T){
+func TestGetCurrentMinute(t *testing.T) {
 	time_s := time.Now()
 	current_minute := GetCurrentMinute(time_s)
 	if current_minute.Second() != 0 {
