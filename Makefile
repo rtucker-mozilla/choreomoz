@@ -11,6 +11,9 @@ test_cron_eval:
 test_util:
 	$(GO) test src/libchorizo/util/util_test.go src/libchorizo/util/scriptvalidator.go src/libchorizo/util/util.go
 
+test_util_cover:
+	$(GO) test -cover src/libchorizo/util/util_test.go src/libchorizo/util/util.go src/libchorizo/util/scriptvalidator.go
+
 chorizo:
 	$(GO) build $(GOOPTS) -o bin/chorizo chorizo.go chorizo_funcs.go commands.go cron_eval.go
 
