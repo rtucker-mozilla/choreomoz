@@ -4,11 +4,11 @@ package libchorizo
 // go test util_test.go util.go
 
 import (
-	"testing"
 	"os/exec"
+	"testing"
 )
 
-func TouchFile(file_path string){
+func TouchFile(file_path string) {
 	cmd := exec.Command("/usr/bin/touch", file_path)
 	err := cmd.Run()
 	if err != nil {
@@ -16,7 +16,7 @@ func TouchFile(file_path string){
 	}
 }
 
-func RmFile(file_path string){
+func RmFile(file_path string) {
 	cmd := exec.Command("rm", "-f", file_path)
 	err := cmd.Run()
 	if err != nil {
@@ -157,14 +157,14 @@ func TestScriptValidatorStructConstructorIsExecutable(t *testing.T) {
 	filepath := "/tmp/chorizo_test_script_file"
 	TouchFile(filepath)
 	t_sv := NewScriptValidator(filepath)
-	if t_sv.IsExecutable != false{
+	if t_sv.IsExecutable != false {
 		t.Error("IsExecutable not being set correctly: ", t_sv.Filemode, "asfd")
 	}
 	cmd := exec.Command("chmod", "700", filepath)
 	cmd.Run()
 
 	t_sv = NewScriptValidator(filepath)
-	if t_sv.IsExecutable != true{
+	if t_sv.IsExecutable != true {
 		t.Error("IsExecutable not being set correctly with executable set: ", t_sv.Filemode)
 	}
 	RmFile(filepath)
@@ -174,7 +174,7 @@ func TestScriptValidatorGetValidFilenameWithInvalidFilename(t *testing.T) {
 	filepath := "/tmp/chorizo_test_script_file"
 	TouchFile(filepath)
 	t_sv := NewScriptValidator(filepath)
-	if t_sv.ValidFileName != false{
+	if t_sv.ValidFileName != false {
 		t.Error("GetValidFilename not being set correctly:", t_sv.ValidFileName)
 	}
 	RmFile(filepath)
@@ -183,7 +183,7 @@ func TestScriptValidatorGetValidFilenameWithValidFilename(t *testing.T) {
 	filepath := "/tmp/1_chorizo_test_script_file"
 	TouchFile(filepath)
 	t_sv := NewScriptValidator(filepath)
-	if t_sv.ValidFileName != true{
+	if t_sv.ValidFileName != true {
 		t.Error("GetValidFilename not being set correctly:", t_sv.ValidFileName)
 	}
 	RmFile(filepath)

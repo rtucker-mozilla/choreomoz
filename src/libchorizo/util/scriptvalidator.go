@@ -7,10 +7,10 @@ import (
 )
 
 type ScriptValidator struct {
-	Filepath string
-	Filemode string
-	Fileinfo os.FileInfo
-	IsExecutable bool
+	Filepath      string
+	Filemode      string
+	Fileinfo      os.FileInfo
+	IsExecutable  bool
 	ValidFileName bool
 }
 
@@ -25,7 +25,7 @@ func NewScriptValidator(filepath string) *ScriptValidator {
 	return sv
 }
 
-func (sv *ScriptValidator) getfileinfo() (error) {
+func (sv *ScriptValidator) getfileinfo() error {
 	info, info_err := os.Stat(sv.Filepath)
 	sv.Fileinfo = info
 	return info_err

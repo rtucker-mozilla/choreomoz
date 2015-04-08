@@ -7,7 +7,6 @@ import (
 	"os"
 )
 
-
 func FileExists(filename string) bool {
 	if _, err := os.Stat(filename); err == nil {
 		return true
@@ -57,9 +56,8 @@ func FileStat(script_path string) (os.FileInfo, error) {
 	return info, info_err
 }
 
-
-func ScriptValid(script_path string) (bool) {
-	if !FileExists(script_path){
+func ScriptValid(script_path string) bool {
+	if !FileExists(script_path) {
 		return false
 	}
 	sv := NewScriptValidator(script_path)
