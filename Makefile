@@ -9,7 +9,7 @@ test_cron_eval:
 	$(GO) test cron_eval_test.go cron_eval.go
 
 test_util:
-	$(GO) test src/libchorizo/util/util_test.go src/libchorizo/util/util.go
+	$(GO) test src/libchorizo/util/util_test.go src/libchorizo/util/scriptvalidator.go src/libchorizo/util/util.go
 
 chorizo:
 	$(GO) build $(GOOPTS) -o bin/chorizo chorizo.go chorizo_funcs.go commands.go cron_eval.go
