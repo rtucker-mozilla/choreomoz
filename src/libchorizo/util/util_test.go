@@ -133,3 +133,58 @@ func TestDeleteStateFile(t *testing.T) {
 	}
 	RmFile(test_filename)
 }
+
+func TestScriptValidatorStructConstructorFilepath(t *testing.T) {
+	filepath := "/tmp/chorizo_test_script_file"
+	TouchFile(filepath)
+	t_sv := NewScriptValidator(filepath)
+	if t_sv.Filepath != filepath {
+		t.Error("Filepath in constructor not being set correctly")
+	}
+
+}
+
+func TestScriptValidatorStructConstructorFilemode(t *testing.T) {
+	filepath := "/tmp/chorizo_test_script_file"
+	TouchFile(filepath)
+	t_sv := NewScriptValidator(filepath)
+	if t_sv.Filemode != "-rw-r--r--" {
+		t.Error("Filepath in constructor not being set correctly: ", t_sv.Filemode, "asfd")
+	}
+
+}
+func TestScriptValidatorStructConstructorIsExecutable(t *testing.T) {
+	filepath := "/tmp/chorizo_test_script_file"
+	TouchFile(filepath)
+	t_sv := NewScriptValidator(filepath)
+	if t_sv.IsExecutable != false{
+		t.Error("IsExecutable not being set correctly: ", t_sv.Filemode, "asfd")
+	}
+	cmd := exec.Command("chmod", "700", filepath)
+	cmd.Run()
+
+	t_sv = NewScriptValidator(filepath)
+	if t_sv.IsExecutable != true{
+		t.Error("IsExecutable not being set correctly with executable set: ", t_sv.Filemode)
+	}
+	RmFile(filepath)
+}
+
+func TestScriptValidatorGetValidFilenameWithInvalidFilename(t *testing.T) {
+	filepath := "/tmp/chorizo_test_script_file"
+	TouchFile(filepath)
+	t_sv := NewScriptValidator(filepath)
+	if t_sv.ValidFileName != false{
+		t.Error("GetValidFilename not being set correctly:", t_sv.ValidFileName)
+	}
+	RmFile(filepath)
+}
+func TestScriptValidatorGetValidFilenameWithValidFilename(t *testing.T) {
+	filepath := "/tmp/1_chorizo_test_script_file"
+	TouchFile(filepath)
+	t_sv := NewScriptValidator(filepath)
+	if t_sv.ValidFileName != true{
+		t.Error("GetValidFilename not being set correctly:", t_sv.ValidFileName)
+	}
+	RmFile(filepath)
+}
