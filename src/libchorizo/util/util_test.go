@@ -111,3 +111,25 @@ func TestWriteLockFile(t *testing.T) {
 	}
 	RmFile(test_filename)
 }
+
+func TestDeleteLockFile(t *testing.T) {
+	test_filename := "/tmp/chorizo_test_file_shouldnt_ever_be_useful"
+	TouchFile(test_filename)
+	DeleteLockFile(test_filename)
+	fe := FileExists(test_filename)
+	if fe != false {
+		t.Error("lockfile is present but should be absent")
+	}
+	RmFile(test_filename)
+}
+
+func TestDeleteStateFile(t *testing.T) {
+	test_filename := "/tmp/chorizo_test_file_shouldnt_ever_be_useful"
+	TouchFile(test_filename)
+	DeleteStateFile(test_filename)
+	fe := FileExists(test_filename)
+	if fe != false {
+		t.Error("statefile is present but should be absent")
+	}
+	RmFile(test_filename)
+}
