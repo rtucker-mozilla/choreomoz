@@ -43,6 +43,11 @@ func SystemReboot(exec_reboot bool) bool {
 	return exec_reboot
 }
 
+func InterpolateConfigOption(exec_path string, config_item string) (retval string) {
+	retval = fmt.Sprintf("%s/%s", exec_path, config_item)
+	return
+}
+
 // Main entry point
 func main() {
 	log := log.GetLogger()
@@ -52,11 +57,11 @@ func main() {
 	// going to specify a specific config file path
 	exec_path := "/etc/chorizo"
 	HOSTNAME, _ := os.Hostname()
-	config, config_err := config.ParseConfig()
+	config, config_err := config.ParseConfig(exec_path)
 	if config_err != nil {
 		log.Error("Unable to open config file")
 	}
-	var DB_FILE = fmt.Sprintf("%s/%s", exec_path, config.Main.Dbfile)
+	var DB_FILE = InterpolateConfigOption(exec_path, config.Main.Dbfile)
 	log.Debug("DB_FILE: ", DB_FILE)
 	var CRONFILE = fmt.Sprintf("%s/%s", exec_path, config.Main.Cronfile)
 	var SCRIPTPATH = fmt.Sprintf("%s/%s", exec_path, config.Main.Scriptpath)

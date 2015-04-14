@@ -12,7 +12,8 @@ import (
 )
 
 func GetLogger() *logrus.Logger {
-	config, _ := libchorizo.ParseConfig()
+	var CONFIGPATH = "/etc/chorizo/chorizo.gcfg"
+	config, _ := libchorizo.ParseConfig(CONFIGPATH)
 	var level_string = config.Main.Loglevel
 	log := logrus.New()
 	switch level_string {

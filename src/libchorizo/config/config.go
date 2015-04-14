@@ -5,6 +5,10 @@ import (
 	"fmt"
 )
 
+type ChorizoConfig interface {
+	InterpolateConfig(config_file_path string) (Config)
+}
+
 type Config struct {
 	Main struct {
 		Dbfile     string
@@ -18,14 +22,26 @@ type Config struct {
 	}
 }
 
-func ParseConfig() (Config, error) {
+type inConfig struct{}
+
+func (ChorizoConfig inConfig) InterpolateConfig(config_file_path string) (Config) {
+	var cfg Config
+	return cfg
+}
+
+func (ChorizoConfig Config) InterpolateConfig(config_file_path string) (Config) {
+	var cfg Config
+	return cfg
+}
+
+func ParseConfig(exec_path string) (Config, error) {
 	//exec_path, _ := os.Getwd()
 	// In https://github.com/rtucker-mozilla/chorizo/issues/15
 	// going to specify a specific config file path
-	exec_path := "/etc/chorizo"
 	var CONFIGPATH = fmt.Sprintf("%s/chorizo.gcfg", exec_path)
 	var cfg Config
 	err := gcfg.ReadFileInto(&cfg, CONFIGPATH)
+	cfg.InterpolateConfig(CONFIGPATH)
 	if err != nil {
 		panic(err)
 	}
