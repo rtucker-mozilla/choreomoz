@@ -19,7 +19,24 @@ type Config struct {
 		Scriptpath string
 		APIUrl     string
 		Loglevel   string
+		ExecPath   string
+		ConfigPath string
 	}
+}
+
+func (cfg Config) NewConfig(exec_path string) (Config){
+	cfg.Main.ExecPath = exec_path
+	cfg.Main.ConfigPath = fmt.Sprintf("%s/chorizo.gcfg", cfg.Main.ExecPath)
+	err := gcfg.ReadFileInto(&cfg, cfg.Main.ConfigPath)
+	cfg.Main.Dbfile = fmt.Sprintf("%s/%s", exec_path, cfg.Main.Dbfile)
+	cfg.Main.Cronfile = fmt.Sprintf("%s/%s", exec_path, cfg.Main.Cronfile)
+	cfg.Main.Scriptpath = fmt.Sprintf("%s/%s", exec_path, cfg.Main.Scriptpath)
+	cfg.Main.Statefile = fmt.Sprintf("%s/%s", exec_path, cfg.Main.Statefile)
+	if err != nil {
+		panic(err)
+	}
+	return cfg
+
 }
 
 type inConfig struct{}

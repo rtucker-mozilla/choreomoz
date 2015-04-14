@@ -14,6 +14,9 @@ test_util:
 test_util_cover:
 	$(GO) test -cover src/libchorizo/util/util_test.go src/libchorizo/util/util.go src/libchorizo/util/scriptvalidator.go
 
+test_config:
+	$(GO) test src/libchorizo/config/config_test.go src/libchorizo/config/config.go
+
 chorizo:
 	$(GO) build $(GOOPTS) -o bin/chorizo chorizo.go chorizo_funcs.go commands.go cron_eval.go
 
