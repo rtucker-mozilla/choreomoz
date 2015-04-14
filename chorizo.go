@@ -56,15 +56,8 @@ func main() {
 	// In https://github.com/rtucker-mozilla/chorizo/issues/15
 	// going to specify a specific config file path
 	exec_path := "/etc/chorizo"
+	config := NewConfig(exec_path)
 	HOSTNAME, _ := os.Hostname()
-	config, config_err := config.ParseConfig(exec_path)
-	if config_err != nil {
-		log.Error("Unable to open config file")
-	}
-	var DB_FILE = InterpolateConfigOption(exec_path, config.Main.Dbfile)
-	log.Debug("DB_FILE: ", DB_FILE)
-	var CRONFILE = fmt.Sprintf("%s/%s", exec_path, config.Main.Cronfile)
-	var SCRIPTPATH = fmt.Sprintf("%s/%s", exec_path, config.Main.Scriptpath)
 	var APIURL = config.Main.APIUrl
 	system_id, system_id_err := GetSystemId(APIURL, HOSTNAME)
 	if system_id_err != nil {
@@ -72,11 +65,11 @@ func main() {
 	}
 	log.Debug("System ID:", system_id)
 	log.Debug("GUIDHash: ", GUIDHash(HOSTNAME))
-	db_created := db.CreateDbIfNotExists(DB_FILE)
+	db_created := db.CreateDbIfNotExists(config.Main.Dbfile)
 	if db_created {
-		log.Info("DB Created at path: ", DB_FILE)
+		log.Info("DB Created at path: ", config.Main.Dbfile)
 	}
-	db1, db_open_err := sql.Open("sqlite3", fmt.Sprintf("file:%s?cache=shared&mode=rwc", DB_FILE))
+	db1, db_open_err := sql.Open("sqlite3", fmt.Sprintf("file:%s?cache=shared&mode=rwc", config.Main.Dbfile))
 	if db_open_err != nil {
 		panic("Unable to open existing database")
 	}
@@ -91,14 +84,14 @@ func main() {
 		}
 	}
 	log.Debug("At INIT: current_locked:", current_locked)
-	if !util.HasScriptPath(SCRIPTPATH) {
-		log.Error(fmt.Sprintf("Script Path %s does not exist.", SCRIPTPATH))
+	if !util.HasScriptPath(config.Main.Scriptpath) {
+		log.Error(fmt.Sprintf("Script Path %s does not exist.", config.Main.Scriptpath))
 		os.Exit(2)
 	}
 	go db.DBPoll(db1, HOSTNAME, APIURL, 0)
 	for {
 		log.Debug("In LOOP: current_locked:", current_locked)
-		cron_line, cron_err := util.ReadCronFile(CRONFILE)
+		cron_line, cron_err := util.ReadCronFile(config.Main.Cronfile)
 		if cron_err != nil {
 			log.Debug(fmt.Sprintf("%s", cron_err))
 			os.Exit(2)
@@ -114,7 +107,7 @@ func main() {
 			time.Sleep(time.Duration(sleep_seconds+1) * time.Second)
 		}
 
-		scripts, _ := filepath.Glob(fmt.Sprintf("%s/*", SCRIPTPATH))
+		scripts, _ := filepath.Glob(fmt.Sprintf("%s/*", config.Main.Scriptpath))
 		UpdateScripts := []parse_update_script.UpdateScript{}
 
 		var run_next = false
