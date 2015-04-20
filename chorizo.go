@@ -56,7 +56,8 @@ func main() {
 	// In https://github.com/rtucker-mozilla/chorizo/issues/15
 	// going to specify a specific config file path
 	exec_path := "/etc/chorizo"
-	config := NewConfig(exec_path)
+	cfg := config.Config{}
+	config := cfg.NewConfig(exec_path)
 	HOSTNAME, _ := os.Hostname()
 	var APIURL = config.Main.APIUrl
 	system_id, system_id_err := GetSystemId(APIURL, HOSTNAME)
