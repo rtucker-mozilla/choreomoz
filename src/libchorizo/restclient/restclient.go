@@ -3,6 +3,8 @@ package libchorizo
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"time"
 	"github.com/jmcvetta/napping"
 	log "libchorizo/log"
 	logobject "libchorizo/logobject"
@@ -11,6 +13,7 @@ import (
 type SystemIdResp struct {
 	Createdat string `json: "created_at"`
 	Hostname  string `json: "hostname"`
+	Cronfile  string `json: "cronfile"`
 	Id        int    `json: "id"`
 }
 
@@ -44,6 +47,40 @@ type CreateSystemUpdateResp struct {
   "total_count": 1
 }
 **************************************************/
+
+func WriteCronFile(cronfile_path string, cronfile_contents string) (err error) {
+	write_byte := []byte(cronfile_contents)
+	err = ioutil.WriteFile(cronfile_path, write_byte, 0600)
+    if err != nil {
+        return
+    }
+
+    return 
+}
+
+func APICronfilePoll(HOSTNAME string, API_URL string, CRONFILE string) {
+	log_s := log.GetLogger()
+	for {
+		result := SystemIdResp{}
+		full_url := fmt.Sprintf("%s/getsystemid/%s/", API_URL, HOSTNAME)
+		resp, err := napping.Get(full_url, nil, &result, nil)
+		if err != nil {
+			log_s.Error("Could not contact API server to read GetSystemIdResp.Cronfile")
+		}
+		if resp.Status() == 200 {
+			err := WriteCronFile(CRONFILE, result.Cronfile)
+			if err != nil {
+				log_s.Error("Could not write confile to: %s", CRONFILE)
+			}
+		} else {
+			err = errors.New("Unable to contact REST API Endpoint.")
+		}
+
+		//time.Sleep(time.Hour * 1)
+		time.Sleep(time.Second * 10)
+	}
+
+}
 func APIGetSystemId(url string, hostname string) (int, error) {
 	log := log.GetLogger()
 	log.Debug("Enter into GetSystemId")
