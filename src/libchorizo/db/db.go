@@ -56,7 +56,7 @@ func CreateDbIfNotExists(db_file string) bool {
 			);
 			create table run_start (
 				id integer not null primary key,
-				log_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+				log_time DATETIME DEFAULT CURRENT_TIMESTAMP
 			);
 			`
 		_, err = db.Exec(sqlStmt)
