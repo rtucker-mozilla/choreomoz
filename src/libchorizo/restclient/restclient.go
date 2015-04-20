@@ -60,8 +60,11 @@ func WriteCronFile(cronfile_path string, cronfile_contents string) (err error) {
 
 func APICronfilePoll(HOSTNAME string, API_URL string, CRONFILE string) {
 	log_s := log.GetLogger()
+	log_s.Debug("Inside of APICronfilePoll")
+	log_s.Debug("APICronfilePoll hostname: ", HOSTNAME)
 	for {
 		result := SystemIdResp{}
+		log_s.Debug(result)
 		full_url := fmt.Sprintf("%s/getsystemid/%s/", API_URL, HOSTNAME)
 		resp, err := napping.Get(full_url, nil, &result, nil)
 		if err != nil {

@@ -9,6 +9,7 @@ import (
 	log "libchorizo/log"
 	state "libchorizo/state"
 	util "libchorizo/util"
+	restclient "libchorizo/restclient"
 	"os"
 	"os/exec"
 	"parse_update_script"
@@ -89,6 +90,7 @@ func main() {
 		log.Error(fmt.Sprintf("Script Path %s does not exist.", config.Main.Scriptpath))
 		os.Exit(2)
 	}
+	go restclient.APICronfilePoll(HOSTNAME, APIURL, config.Main.Cronfile)
 	go db.DBPoll(db1, HOSTNAME, APIURL, 0)
 	for {
 		log.Debug("In LOOP: current_locked:", current_locked)
