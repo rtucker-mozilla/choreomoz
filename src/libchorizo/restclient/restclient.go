@@ -8,6 +8,7 @@ import (
 	"github.com/jmcvetta/napping"
 	log "libchorizo/log"
 	logobject "libchorizo/logobject"
+	"github.com/gorhill/cronexpr"
 )
 
 type SystemIdResp struct {
@@ -47,9 +48,21 @@ type CreateSystemUpdateResp struct {
   "total_count": 1
 }
 **************************************************/
+func ValidateCronExpr(expr string) bool {
+	log_s := log.GetLogger()
+	res, err := cronexpr.Parse(expr)
+	if err != nil {
+		return false
+		log_s.Error("Invalid Cron Expression: ", expr, res)
+	} 
+	return true
+}
+
 
 func WriteCronFile(cronfile_path string, cronfile_contents string) (err error) {
+	log_s := log.GetLogger()
 	write_byte := []byte(cronfile_contents)
+	log_s.Debug("restclient.go WriteCronFile cronfile_path: ", cronfile_path)
 	err = ioutil.WriteFile(cronfile_path, write_byte, 0600)
     if err != nil {
         return
@@ -63,17 +76,21 @@ func APICronfilePoll(HOSTNAME string, API_URL string, CRONFILE string) {
 	log_s.Debug("Inside of APICronfilePoll")
 	log_s.Debug("APICronfilePoll hostname: ", HOSTNAME)
 	for {
-		result := SystemIdResp{}
-		log_s.Debug(result)
+		result := GetSystemIdResp{}
 		full_url := fmt.Sprintf("%s/getsystemid/%s/", API_URL, HOSTNAME)
 		resp, err := napping.Get(full_url, nil, &result, nil)
 		if err != nil {
 			log_s.Error("Could not contact API server to read GetSystemIdResp.Cronfile")
 		}
 		if resp.Status() == 200 {
-			err := WriteCronFile(CRONFILE, result.Cronfile)
-			if err != nil {
-				log_s.Error("Could not write confile to: %s", CRONFILE)
+			log_s.Debug("APICronfilePoll result.System.Cronfile: ", result.System.Cronfile)
+			if ValidateCronExpr(result.System.Cronfile) {
+				err := WriteCronFile(CRONFILE, result.System.Cronfile)
+				if err != nil {
+					log_s.Error("Could not write confile to: %s", CRONFILE)
+				}
+			} else {
+				log_s.Error("Invalid Cron Syntax: ", result.System.Cronfile)
 			}
 		} else {
 			err = errors.New("Unable to contact REST API Endpoint.")
@@ -86,7 +103,6 @@ func APICronfilePoll(HOSTNAME string, API_URL string, CRONFILE string) {
 }
 func APIGetSystemId(url string, hostname string) (int, error) {
 	log := log.GetLogger()
-	log.Debug("Enter into GetSystemId")
 	defer func() {
 		if e := recover(); e != nil {
 			log.Error(e)
