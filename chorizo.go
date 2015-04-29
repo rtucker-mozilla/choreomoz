@@ -1,22 +1,183 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/streadway/amqp"
 	config "libchorizo/config"
-	db "libchorizo/db"
-	log "libchorizo/log"
-	state "libchorizo/state"
-	util "libchorizo/util"
-	restclient "libchorizo/restclient"
+	"parse_update_script"
+	"database/sql"
+	"log"
 	"os"
 	"os/exec"
-	"parse_update_script"
-	"path/filepath"
-	"strconv"
 	"time"
 )
+
+func failOnError(err error, msg string) {
+	if err != nil {
+		fmt.Println("Inside Error")
+		fmt.Println("%s: %s", msg, err)
+		log.Fatalf("%s: %s", msg, err)
+		panic(fmt.Sprintf("%s: %s", msg, err))
+	}
+}
+func main() {
+	//conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+	exchange := "chorizo"
+	exchangeType := "direct"
+	HOSTNAME, _ := os.Hostname()
+	queue := HOSTNAME
+	bindingKey := "chorizo"
+	consumerTag := ""
+	c, err := NewConsumer("amqp://localhost:5672/", exchange, exchangeType, queue, bindingKey, consumerTag)
+	if err != nil {
+		fmt.Println("Could not create NewConsumer")
+		fmt.Println(err)
+	}
+	if err := c.Shutdown(); err != nil {
+		log.Fatalf("error during shutdown: %s", err)
+	}
+	//exec_path, _ := os.Getwd()
+	// In https://github.com/rtucker-mozilla/chorizo/issues/15
+	// going to specify a specific config file path
+	exec_path := "/etc/chorizo"
+	cfg := config.Config{}
+	config := cfg.NewConfig(exec_path)
+	fmt.Println(config)
+
+}
+type Consumer struct {
+	conn    *amqp.Connection
+	channel *amqp.Channel
+	tag     string
+	done    chan error
+}
+
+func NewConsumer(amqpURI, exchange, exchangeType, queueName, key, ctag string) (*Consumer, error) {
+	c := &Consumer{
+		conn:    nil,
+		channel: nil,
+		tag:     ctag,
+		done:    make(chan error),
+	}
+	fmt.Println(c)
+
+	var err error
+
+	log.Printf("dialing %q", amqpURI)
+	c.conn, err = amqp.Dial(amqpURI)
+	if err != nil {
+		return nil, fmt.Errorf("Dial: %s", err)
+	}
+
+	go func() {
+		fmt.Printf("closing: %s", <-c.conn.NotifyClose(make(chan *amqp.Error)))
+	}()
+
+	log.Printf("got Connection, getting Channel")
+	c.channel, err = c.conn.Channel()
+	if err != nil {
+		return nil, fmt.Errorf("Channel: %s", err)
+	}
+
+	log.Printf("got Channel, declaring Exchange (%q)", exchange)
+	if err = c.channel.ExchangeDeclare(
+		exchange,     // name of the exchange
+		exchangeType, // type
+		false,         // durable
+		false,        // delete when complete
+		false,        // internal
+		false,        // noWait
+		nil,          // arguments
+	); err != nil {
+		return nil, fmt.Errorf("Exchange Declare: %s", err)
+	}
+
+	log.Printf("declared Exchange, declaring Queue %q", queueName)
+	queue, err := c.channel.QueueDeclare(
+		queueName, // name of the queue
+		false,      // durable
+		false,     // delete when usused
+		false,     // exclusive
+		false,     // noWait
+		nil,       // arguments
+	)
+	if err != nil {
+		return nil, fmt.Errorf("Queue Declare: %s", err)
+	}
+
+	log.Printf("declared Queue (%q %d messages, %d consumers), binding to Exchange (key %q)",
+		queue.Name, queue.Messages, queue.Consumers, key)
+
+	if err = c.channel.QueueBind(
+		queue.Name, // name of the queue
+		key,        // bindingKey
+		exchange,   // sourceExchange
+		false,      // noWait
+		nil,        // arguments
+	); err != nil {
+		return nil, fmt.Errorf("Queue Bind: %s", err)
+	}
+
+	log.Printf("Queue bound to Exchange, starting Consume (consumer tag %q)", c.tag)
+	for {
+		deliveries, err := c.channel.Consume(
+			queue.Name, // name
+			c.tag,      // consumerTag,
+			false,      // noAck
+			false,      // exclusive
+			false,      // noLocal
+			false,      // noWait
+			nil,        // arguments
+		)
+		if err != nil {
+			return nil, fmt.Errorf("Queue Consume: %s", err)
+		}
+		go handle(deliveries, c.done)
+		time.Sleep(1 * time.Second)
+
+	}
+
+
+	return c, nil
+}
+
+func (c *Consumer) Shutdown() error {
+	// will close() the deliveries channel
+	if err := c.channel.Cancel(c.tag, true); err != nil {
+		return fmt.Errorf("Consumer cancel failed: %s", err)
+	}
+
+	if err := c.conn.Close(); err != nil {
+		return fmt.Errorf("AMQP connection close error: %s", err)
+	}
+
+	defer log.Printf("AMQP shutdown OK")
+
+	// wait for handle() to exit
+	return <-c.done
+}
+
+func handle(deliveries <-chan amqp.Delivery, done chan error) {
+	for d := range deliveries {
+		log.Printf(
+			"got %dB delivery: [%v] %q",
+			len(d.Body),
+			d.DeliveryTag,
+			d.Body,
+		)
+		d.Ack(true)
+	}
+	//log.Printf("handle: deliveries channel closed")
+	// Here we detect the actionable item
+	/* Choices Appear to be:
+	   StartUpdate
+	   EndUpdate
+	   Reboot
+	   ExecScript
+	*/
+	// Need to figure out logic for restarting
+	done <- nil
+}
 
 type UpdateScriptResponse struct {
 	ret_code      int
@@ -47,139 +208,4 @@ func SystemReboot(exec_reboot bool) bool {
 func InterpolateConfigOption(exec_path string, config_item string) (retval string) {
 	retval = fmt.Sprintf("%s/%s", exec_path, config_item)
 	return
-}
-
-// Main entry point
-func main() {
-	log := log.GetLogger()
-
-	//exec_path, _ := os.Getwd()
-	// In https://github.com/rtucker-mozilla/chorizo/issues/15
-	// going to specify a specific config file path
-	exec_path := "/etc/chorizo"
-	cfg := config.Config{}
-	config := cfg.NewConfig(exec_path)
-	HOSTNAME, _ := os.Hostname()
-	var APIURL = config.Main.APIUrl
-	system_id, system_id_err := GetSystemId(APIURL, HOSTNAME)
-	if system_id_err != nil {
-		log.Warn("Could not retrieve system ID")
-	}
-	log.Debug("System ID:", system_id)
-	log.Debug("GUIDHash: ", GUIDHash(HOSTNAME))
-	db_created := db.CreateDbIfNotExists(config.Main.Dbfile)
-	if db_created {
-		log.Info("DB Created at path: ", config.Main.Dbfile)
-	}
-	db1, db_open_err := sql.Open("sqlite3", fmt.Sprintf("file:%s?cache=shared&mode=rwc", config.Main.Dbfile))
-	if db_open_err != nil {
-		panic("Unable to open existing database")
-	}
-	var current_locked = false
-	start_state, start_state_err := state.GetMostRecentState(db1)
-	if start_state.Finished == 0 && start_state.Id > 0 {
-		current_locked = true
-	}
-	if start_state_err != nil && start_state.Finished == 0 {
-		if start_state_err.Error() != "sql: no rows in result set" {
-			current_locked = true
-		}
-	}
-	log.Debug("At INIT: current_locked:", current_locked)
-	if !util.HasScriptPath(config.Main.Scriptpath) {
-		log.Error(fmt.Sprintf("Script Path %s does not exist.", config.Main.Scriptpath))
-		os.Exit(2)
-	}
-	go restclient.APICronfilePoll(HOSTNAME, APIURL, config.Main.Cronfile)
-	go db.DBPoll(db1, HOSTNAME, APIURL, 0)
-	for {
-		log.Debug("In LOOP: current_locked:", current_locked)
-		cron_line, cron_err := util.ReadCronFile(config.Main.Cronfile)
-		if cron_err != nil {
-			log.Debug(fmt.Sprintf("%s", cron_err))
-			os.Exit(2)
-		}
-
-		run_now, run_after, sleep_seconds := EvalCronLine(cron_line)
-		if run_now == false && run_after == false && current_locked == false {
-			time.Sleep(time.Duration(sleep_seconds) * time.Second)
-			continue
-		}
-
-		if run_now == false && run_after == true && current_locked == false {
-			time.Sleep(time.Duration(sleep_seconds+1) * time.Second)
-		}
-
-		scripts, _ := filepath.Glob(fmt.Sprintf("%s/*", config.Main.Scriptpath))
-		UpdateScripts := []parse_update_script.UpdateScript{}
-
-		var run_next = false
-		for i := 0; i < len(scripts); i++ {
-			script_path := scripts[i]
-			if !util.ScriptValid(script_path) {
-				continue
-			}
-			if run_next == false && current_locked && script_path != start_state.Last_script_completed && start_state.Last_script_completed != "" {
-				// We are locked from running scripts
-				run_next = false
-				continue
-			} else if current_locked && script_path == start_state.Last_script_completed && start_state.Last_script_completed != "" {
-				// We are locked from running scripts
-				// The last ran script is the current in the stack
-				// unlock and continue to the next runnable script
-				run_next = true
-				continue
-			} else {
-				run_next = true
-			}
-			var uf parse_update_script.UpdateScriptFile
-			var us parse_update_script.UpdateScript
-			uf.FilePath = script_path
-			parse_update_script.ReadFile(&uf)
-			us.ParseScript(&uf)
-			UpdateScripts = append(UpdateScripts, us)
-		}
-		exec_chan := make(chan UpdateScriptResponse)
-		go ProcessEntry(exec_chan, db1)
-		should_reboot := false
-		for i := 0; i < len(UpdateScripts); i++ {
-			if should_reboot == true {
-				continue
-			}
-			exec_script := UpdateScripts[i].FilePath
-			ret_code, stdout, stderr := ExecCommand(exec_script)
-			usr := UpdateScriptResponse{}
-			usr.ret_code = ret_code
-			usr.stderr = stderr
-			usr.stdout = stdout
-			usr.update_script = &UpdateScripts[i]
-			usr.db = db1
-			usr.system_id = system_id
-			usr.api_url = APIURL
-			if i == 0 && !current_locked {
-				usr.is_start = true
-			} else {
-				usr.is_start = false
-			}
-			if i == len(UpdateScripts)-1 {
-				usr.is_end = true
-			} else {
-				usr.is_end = false
-			}
-			exec_chan <- usr
-			go ProcessEntry(exec_chan, db1)
-			exit_code_to_i, exit_code_to_i_err := strconv.Atoi(UpdateScripts[i].ScriptExitCodeReboot)
-
-			if exit_code_to_i_err != nil {
-				panic(exit_code_to_i_err)
-			}
-			if exit_code_to_i == ret_code {
-				SystemReboot(true)
-				should_reboot = true
-			}
-
-		}
-		time.Sleep(60 * time.Second)
-		current_locked = false
-	}
 }
