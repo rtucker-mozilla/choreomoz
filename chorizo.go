@@ -20,13 +20,22 @@ func failOnError(err error, msg string) {
 		panic(fmt.Sprintf("%s: %s", msg, err))
 	}
 }
+/*func parseQueueName(input_hostname string) (err error){
+		return input_hostnane, err
+}
+
+func parseBindingKey(input_hostname string) (err error){
+		return input_hostnane, err
+}*/
+
 func main() {
 	//conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
 	exchange := "chorizo"
-	exchangeType := "direct"
+	exchangeType := "topic"
 	HOSTNAME, _ := os.Hostname()
-	queue := HOSTNAME
-	bindingKey := "chorizo"
+	fmt.Println(HOSTNAME)
+	queue := "robs-macbook-pro"
+	bindingKey := "robs-macbook-pro.host"
 	consumerTag := ""
 	c, err := NewConsumer("amqp://localhost:5672/", exchange, exchangeType, queue, bindingKey, consumerTag)
 	if err != nil {
@@ -59,7 +68,7 @@ func NewConsumer(amqpURI, exchange, exchangeType, queueName, key, ctag string) (
 		tag:     ctag,
 		done:    make(chan error),
 	}
-	fmt.Println(c)
+	fmt.Println(exchange, exchangeType)
 
 	var err error
 
@@ -119,23 +128,25 @@ func NewConsumer(amqpURI, exchange, exchangeType, queueName, key, ctag string) (
 	}
 
 	log.Printf("Queue bound to Exchange, starting Consume (consumer tag %q)", c.tag)
-	for {
-		deliveries, err := c.channel.Consume(
-			queue.Name, // name
-			c.tag,      // consumerTag,
-			false,      // noAck
-			false,      // exclusive
-			false,      // noLocal
-			false,      // noWait
-			nil,        // arguments
-		)
-		if err != nil {
-			return nil, fmt.Errorf("Queue Consume: %s", err)
-		}
-		go handle(deliveries, c.done)
-		time.Sleep(1 * time.Second)
+	// forever chan to block
+	forever := make(chan bool)
 
+	deliveries, err := c.channel.Consume(
+		queue.Name, // name
+		c.tag,      // consumerTag,
+		false,      // noAck
+		false,      // exclusive
+		false,      // noLocal
+		false,      // noWait
+		nil,        // arguments
+	)
+	if err != nil {
+		return nil, fmt.Errorf("Queue Consume: %s", err)
 	}
+	go handle(deliveries, c.done)
+
+	<-forever
+
 
 
 	return c, nil
