@@ -13,6 +13,7 @@ import (
 )
 
 
+
 // GUIDHash returns a SHA1 hash of the hostname and timestamp to tag local logging groups
 func GUIDHash(hostname string) string {
 	current_time := time.Now()

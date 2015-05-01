@@ -8,6 +8,9 @@ all: clean go_get_deps chorizo
 test_cron_eval:
 	$(GO) test cron_eval_test.go cron_eval.go
 
+test_chorizo_funcs:
+	$(GO) test chorizo_funcs.go cron_eval.go
+
 test_util:
 	$(GO) test src/libchorizo/util/util_test.go src/libchorizo/util/scriptvalidator.go src/libchorizo/util/util.go
 
@@ -16,6 +19,9 @@ test_util_cover:
 
 test_config:
 	$(GO) test src/libchorizo/config/config_test.go src/libchorizo/config/config.go
+
+test_commands:
+	$(GO) test commands_test.go commands.go
 
 test_all: test_cron_eval test_util test_config
 

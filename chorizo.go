@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"time"
+	"encoding/json"
 )
 
 func failOnError(err error, msg string) {
@@ -28,6 +29,7 @@ func parseBindingKey(input_hostname string) (err error){
 		return input_hostnane, err
 }*/
 
+
 func main() {
 	//conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
 	exchange := "chorizo"
@@ -36,6 +38,7 @@ func main() {
 	fmt.Println(HOSTNAME)
 	queue := "robs-macbook-pro"
 	bindingKey := "robs-macbook-pro.host"
+	//masterBindingKey := "master.robs-macbook-pro.host"
 	consumerTag := ""
 	c, err := NewConsumer("amqp://localhost:5672/", exchange, exchangeType, queue, bindingKey, consumerTag)
 	if err != nil {
@@ -61,6 +64,46 @@ type Consumer struct {
 	done    chan error
 }
 
+func publish(amqpURI, exchange, exchangeType, routingKey, body string, reliable bool) error {
+
+	// This function dials, connects, declares, publishes, and tears down,
+	// all in one go. In a real service, you probably want to maintain a
+	// long-lived connection as state, and publish against that.
+
+	log.Printf("dialing %q", amqpURI)
+	connection, err := amqp.Dial(amqpURI)
+	if err != nil {
+		return fmt.Errorf("Dial: %s", err)
+	}
+	defer connection.Close()
+
+	log.Printf("got Connection, getting Channel")
+	channel, err := connection.Channel()
+	if err != nil {
+		return fmt.Errorf("Channel: %s", err)
+	}
+
+	log.Printf("got Channel, declaring %q Exchange (%q)", exchangeType, exchange)
+	if err := channel.ExchangeDeclare(
+		exchange,     // name
+		exchangeType, // type
+		true,         // durable
+		false,        // auto-deleted
+		false,        // internal
+		false,        // noWait
+		nil,          // arguments
+	); err != nil {
+		return fmt.Errorf("Exchange Declare: %s", err)
+	}
+
+	// Reliable publisher confirms require confirm.select support from the
+	// connection.
+
+	log.Printf("declared Exchange, publishing %dB body (%q)", len(body), body)
+
+	return nil
+}
+
 func NewConsumer(amqpURI, exchange, exchangeType, queueName, key, ctag string) (*Consumer, error) {
 	c := &Consumer{
 		conn:    nil,
@@ -69,6 +112,8 @@ func NewConsumer(amqpURI, exchange, exchangeType, queueName, key, ctag string) (
 		done:    make(chan error),
 	}
 	fmt.Println(exchange, exchangeType)
+	masterQueueName := fmt.Sprintf("master.%s", queueName)
+	fmt.Println(masterQueueName)
 
 	var err error
 
@@ -110,9 +155,18 @@ func NewConsumer(amqpURI, exchange, exchangeType, queueName, key, ctag string) (
 		false,     // noWait
 		nil,       // arguments
 	)
+	_, err = c.channel.QueueDeclare(
+		masterQueueName, // name of the queue
+		false,      // durable
+		false,     // delete when usused
+		false,     // exclusive
+		false,     // noWait
+		nil,       // arguments
+	)
 	if err != nil {
 		return nil, fmt.Errorf("Queue Declare: %s", err)
 	}
+
 
 	log.Printf("declared Queue (%q %d messages, %d consumers), binding to Exchange (key %q)",
 		queue.Name, queue.Messages, queue.Consumers, key)
@@ -120,6 +174,17 @@ func NewConsumer(amqpURI, exchange, exchangeType, queueName, key, ctag string) (
 	if err = c.channel.QueueBind(
 		queue.Name, // name of the queue
 		key,        // bindingKey
+		exchange,   // sourceExchange
+		false,      // noWait
+		nil,        // arguments
+	); err != nil {
+		return nil, fmt.Errorf("Queue Bind: %s", err)
+	}
+
+	masterRoutingKey := "master.robs-macbook-pro.host"
+	if err = c.channel.QueueBind(
+		masterQueueName, // name of the queue
+		masterRoutingKey,        // bindingKey
 		exchange,   // sourceExchange
 		false,      // noWait
 		nil,        // arguments
@@ -143,7 +208,7 @@ func NewConsumer(amqpURI, exchange, exchangeType, queueName, key, ctag string) (
 	if err != nil {
 		return nil, fmt.Errorf("Queue Consume: %s", err)
 	}
-	go handle(deliveries, c.done)
+	go handle(deliveries, c.done, c)
 
 	<-forever
 
@@ -168,7 +233,7 @@ func (c *Consumer) Shutdown() error {
 	return <-c.done
 }
 
-func handle(deliveries <-chan amqp.Delivery, done chan error) {
+func handle(deliveries <-chan amqp.Delivery, done chan error, c *Consumer) {
 	for d := range deliveries {
 		log.Printf(
 			"got %dB delivery: [%v] %q",
@@ -177,6 +242,35 @@ func handle(deliveries <-chan amqp.Delivery, done chan error) {
 			d.Body,
 		)
 		d.Ack(true)
+		res := ParseCommand{}
+		json.Unmarshal(d.Body, &res)
+		body_string := "test"
+		respObj, err := res.ExecuteCommand()
+		if err != nil {
+			body_string = "Error occurred"
+		} else {
+			body_string, _ = respObj.Response()
+		}
+		masterRoutingKey := "master.robs-macbook-pro.host"
+		puberr := c.channel.Publish(
+			"chorizo",   // publish to an exchange
+			masterRoutingKey, // routing to 0 or more queues
+			false,      // mandatory
+			false,      // immediate
+			amqp.Publishing{
+				Headers:         amqp.Table{},
+				ContentType:     "text/plain",
+				ContentEncoding: "",
+				Body:            []byte(body_string),
+				DeliveryMode:    amqp.Transient, // 1=non-persistent, 2=persistent
+				Priority:        9,              // 0-9
+				// a bunch of application/implementation-specific fields
+			},
+		) 
+		fmt.Println("Here")
+		if puberr != nil {
+			fmt.Println(fmt.Errorf("Exchange Publish: %s", puberr))
+		}
 	}
 	//log.Printf("handle: deliveries channel closed")
 	// Here we detect the actionable item
