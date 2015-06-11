@@ -16,6 +16,13 @@ import (
 	"io/ioutil"
 	"encoding/json"
 )
+type HelloResp struct {
+	Hash 						string
+	Hostname    				string
+	Command 					string
+	ReturnString 				string
+	GroupId 					int
+}
 
 func failOnError(err error, msg string) {
 	if err != nil {
@@ -26,6 +33,34 @@ func failOnError(err error, msg string) {
 	}
 }
 
+func SendHello(masterRoutingKey string, c *Consumer){
+	hello_resp := HelloResp{}
+	hello_resp.Hash = "xxx"
+	hello_resp.Hostname, _ = os.Hostname()
+	hello_resp.Command = "hello_resp"
+	hello_resp.ReturnString = "hello_resp"
+	body_string, _ := json.Marshal(hello_resp)
+	puberr := c.channel.Publish(
+		"chorizo",   // publish to an exchange
+		masterRoutingKey, // routing to 0 or more queues
+		false,      // mandatory
+		false,      // immediate
+		amqp.Publishing{
+			Headers:         amqp.Table{},
+			ContentType:     "text/plain",
+			ContentEncoding: "",
+			Body:            []byte(body_string),
+			DeliveryMode:    amqp.Transient, // 1=non-persistent, 2=persistent
+			Priority:        9,              // 0-9
+			// a bunch of application/implementation-specific fields
+		},
+	) 
+	fmt.Println(string(body_string))
+	if puberr != nil {
+		fmt.Println(fmt.Errorf("Exchange Publish: %s", puberr))
+	}
+
+}
 
 func main() {
 	//conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
@@ -226,7 +261,9 @@ func NewConsumer(amqpURI, exchange, exchangeType, queueName, key, ctag string, u
 	}
 
 	log.Printf("Queue bound to Exchange, starting Consume (consumer tag %q)", c.tag)
+	// Announce to master queue that we have connected
 	// forever chan to block
+	SendHello(masterRoutingKey, c)
 	forever := make(chan bool)
 
 	deliveries, err := c.channel.Consume(
