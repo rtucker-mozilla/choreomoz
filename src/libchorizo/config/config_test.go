@@ -27,6 +27,8 @@ cronfile = CRONFILE
 scriptpath = scripts
 apiurl = "https://127.0.0.1/api"
 statefile = STATEFILE
+rabbitmqhost = 127.0.0.1
+rabbitmqport = 5672
 loglevel = DEBUG`
 	d1 := []byte(config_text)
     err := ioutil.WriteFile(filepath, d1, 0644)
@@ -138,5 +140,31 @@ func TestNewConfigAPIUrl(t *testing.T) {
 	c := cfg.NewConfig(exec_path)
 	if c.Main.APIUrl != "https://127.0.0.1/api" {
 		t.Error("NewConfig not setting proper APIUrl")
+	}
+}
+func TestNewConfigRabbitmqHost(t *testing.T) {
+	exec_path := "/tmp"
+	full_path := "/tmp/chorizo.gcfg"
+	if FileExists(full_path) {
+		RmFile(full_path)
+	}
+	CreateTestConfig(full_path)
+	cfg := Config{}
+	c := cfg.NewConfig(exec_path)
+	if c.Main.RabbitmqHost != "127.0.0.1" {
+		t.Error("NewConfig not setting proper RabbitmqHost")
+	}
+}
+func TestNewConfigRabbitmqPort(t *testing.T) {
+	exec_path := "/tmp"
+	full_path := "/tmp/chorizo.gcfg"
+	if FileExists(full_path) {
+		RmFile(full_path)
+	}
+	CreateTestConfig(full_path)
+	cfg := Config{}
+	c := cfg.NewConfig(exec_path)
+	if c.Main.RabbitmqPort != "5672" {
+		t.Error("NewConfig not setting proper RabbitmqPort")
 	}
 }

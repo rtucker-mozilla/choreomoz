@@ -21,6 +21,11 @@ type Config struct {
 		Loglevel   string
 		ExecPath   string
 		ConfigPath string
+		RabbitmqHost string
+		RabbitmqPort string
+		RabbitmqUser string
+		RabbitmqPass string
+		UseTls bool
 	}
 }
 

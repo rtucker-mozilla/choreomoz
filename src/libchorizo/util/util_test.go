@@ -9,7 +9,7 @@ import (
 )
 
 func TouchFile(file_path string) {
-	cmd := exec.Command("/usr/bin/touch", file_path)
+	cmd := exec.Command("touch", file_path)
 	err := cmd.Run()
 	if err != nil {
 		panic(err)
@@ -187,4 +187,64 @@ func TestScriptValidatorGetValidFilenameWithValidFilename(t *testing.T) {
 		t.Error("GetValidFilename not being set correctly:", t_sv.ValidFileName)
 	}
 	RmFile(filepath)
+}
+
+func TestHostnameToQueueName(t *testing.T) {
+	input_name := "foo"
+	proper_name := "foo"
+	b := HostnameToQueueName(input_name)
+	if b != "foo" {
+		t.Error("HostnameToQueueName: ", b, "Doesn't match:", proper_name)
+    }
+
+	input_name = "foo.bar"
+	proper_name = "foo-bar"
+	b = HostnameToQueueName(input_name)
+	if b != proper_name {
+		t.Error("HostnameToQueueName: ", b, "Doesn't match:", proper_name)
+    }
+
+	input_name = "foo.bar.baz"
+	proper_name = "foo-bar-baz"
+	b = HostnameToQueueName(input_name)
+	if b != proper_name {
+		t.Error("HostnameToQueueName: ", b, "Doesn't match:", proper_name)
+    }
+
+	input_name = "foo-bar-baz"
+	proper_name = "foo-bar-baz"
+	b = HostnameToQueueName(input_name)
+	if b != proper_name {
+		t.Error("HostnameToQueueName: ", b, "Doesn't match:", proper_name)
+    }
+}
+
+func TestHostnameToBindingKey(t *testing.T) {
+	input_name := "foo"
+	proper_name := "foo.host"
+	b := HostnameToBindingKey(input_name)
+	if b != proper_name {
+		t.Error("HostnameToBindingKey: ", b, "Doesn't match:", proper_name)
+    }
+
+	input_name = "foo.bar"
+	proper_name = "foo-bar.host"
+	b = HostnameToBindingKey(input_name)
+	if b != proper_name {
+		t.Error("HostnameToBindingKey: ", b, "Doesn't match:", proper_name)
+    }
+
+	input_name = "foo.bar.baz"
+	proper_name = "foo-bar-baz.host"
+	b = HostnameToBindingKey(input_name)
+	if b != proper_name {
+		t.Error("HostnameToBindingKey: ", b, "Doesn't match:", proper_name)
+    }
+    
+	input_name = "foo-bar-baz"
+	proper_name = "foo-bar-baz.host"
+	b = HostnameToBindingKey(input_name)
+	if b != proper_name {
+		t.Error("HostnameToBindingKey: ", b, "Doesn't match:", proper_name)
+    }
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 )
 
 func FileExists(filename string) bool {
@@ -63,3 +64,14 @@ func ScriptValid(script_path string) bool {
 	sv := NewScriptValidator(script_path)
 	return sv.IsExecutable && sv.ValidFileName
 }
+
+func HostnameToQueueName(input_string string) string {
+	queueName := strings.Replace(input_string, ".", "-", -1)
+	return queueName
+}
+func HostnameToBindingKey(input_string string) string {
+	keyName := strings.Replace(input_string, ".", "-", -1)
+	keyName = fmt.Sprintf("%s.host", keyName)
+	return keyName
+}
+

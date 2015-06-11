@@ -4,12 +4,16 @@ import (
 	"fmt"
 	"github.com/streadway/amqp"
 	config "libchorizo/config"
+	util "libchorizo/util"
 	"parse_update_script"
 	"database/sql"
 	"log"
 	"os"
 	"os/exec"
 	"time"
+	"crypto/tls"
+	"crypto/x509"
+	"io/ioutil"
 	"encoding/json"
 )
 
@@ -21,26 +25,34 @@ func failOnError(err error, msg string) {
 		panic(fmt.Sprintf("%s: %s", msg, err))
 	}
 }
-/*func parseQueueName(input_hostname string) (err error){
-		return input_hostnane, err
-}
-
-func parseBindingKey(input_hostname string) (err error){
-		return input_hostnane, err
-}*/
 
 
 func main() {
 	//conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+	exec_path := "/etc/chorizo"
+	cfg := config.Config{}
+	config := cfg.NewConfig(exec_path)
+	useTls := config.Main.UseTls
 	exchange := "chorizo"
 	exchangeType := "topic"
 	HOSTNAME, _ := os.Hostname()
 	fmt.Println(HOSTNAME)
-	queue := "robs-macbook-pro"
-	bindingKey := "robs-macbook-pro.host"
-	//masterBindingKey := "master.robs-macbook-pro.host"
+	queue := util.HostnameToQueueName(HOSTNAME)
+	bindingKey := util.HostnameToBindingKey(HOSTNAME)
 	consumerTag := ""
-	c, err := NewConsumer("amqp://localhost:5672/", exchange, exchangeType, queue, bindingKey, consumerTag)
+	conn_prefix := ""
+	if useTls == true {
+		conn_prefix = "amqps"
+	} else {
+		conn_prefix = "amqp"
+	}
+	conn_string := fmt.Sprintf("%s://%s:%s@%s:%s/", 
+		conn_prefix,
+		config.Main.RabbitmqUser,
+		config.Main.RabbitmqPass,
+		config.Main.RabbitmqHost,
+		config.Main.RabbitmqPort)
+	c, err := NewConsumer(conn_string, exchange, exchangeType, queue, bindingKey, consumerTag, useTls)
 	if err != nil {
 		fmt.Println("Could not create NewConsumer")
 		fmt.Println(err)
@@ -51,9 +63,6 @@ func main() {
 	//exec_path, _ := os.Getwd()
 	// In https://github.com/rtucker-mozilla/chorizo/issues/15
 	// going to specify a specific config file path
-	exec_path := "/etc/chorizo"
-	cfg := config.Config{}
-	config := cfg.NewConfig(exec_path)
 	fmt.Println(config)
 
 }
@@ -64,7 +73,8 @@ type Consumer struct {
 	done    chan error
 }
 
-func publish(amqpURI, exchange, exchangeType, routingKey, body string, reliable bool) error {
+
+/*func publish(amqpURI, exchange, exchangeType, routingKey, body string, reliable bool) error {
 
 	// This function dials, connects, declares, publishes, and tears down,
 	// all in one go. In a real service, you probably want to maintain a
@@ -102,9 +112,28 @@ func publish(amqpURI, exchange, exchangeType, routingKey, body string, reliable 
 	log.Printf("declared Exchange, publishing %dB body (%q)", len(body), body)
 
 	return nil
+}*/
+
+func GetConnection(amqpURI string, useTls bool) (*amqp.Connection, error){
+	cfg := new(tls.Config)
+	cfg.RootCAs = x509.NewCertPool()
+	if ca, err := ioutil.ReadFile("/etc/chorizo/ssl/mozilla-cacert.pem"); err == nil {
+    	cfg.RootCAs.AppendCertsFromPEM(ca)
+	}
+
+
+	if useTls == true {
+		fmt.Println("dialing tls")
+		conn, err := amqp.DialTLS(amqpURI, cfg)
+		return conn, err
+	} else {
+		conn, err := amqp.Dial(amqpURI)
+		return conn, err
+	}
+
 }
 
-func NewConsumer(amqpURI, exchange, exchangeType, queueName, key, ctag string) (*Consumer, error) {
+func NewConsumer(amqpURI, exchange, exchangeType, queueName, key, ctag string, useTls bool) (*Consumer, error) {
 	c := &Consumer{
 		conn:    nil,
 		channel: nil,
@@ -118,17 +147,21 @@ func NewConsumer(amqpURI, exchange, exchangeType, queueName, key, ctag string) (
 	var err error
 
 	log.Printf("dialing %q", amqpURI)
-	c.conn, err = amqp.Dial(amqpURI)
+	c.conn, err = GetConnection(amqpURI, useTls)
 	if err != nil {
 		return nil, fmt.Errorf("Dial: %s", err)
 	}
 
 	go func() {
+		// Let supervisord restart the process
 		fmt.Printf("closing: %s", <-c.conn.NotifyClose(make(chan *amqp.Error)))
+		os.Exit(2)
 	}()
 
 	log.Printf("got Connection, getting Channel")
-	c.channel, err = c.conn.Channel()
+	if c.channel == nil {
+		c.channel, err = c.conn.Channel()
+	}
 	if err != nil {
 		return nil, fmt.Errorf("Channel: %s", err)
 	}
@@ -181,7 +214,7 @@ func NewConsumer(amqpURI, exchange, exchangeType, queueName, key, ctag string) (
 		return nil, fmt.Errorf("Queue Bind: %s", err)
 	}
 
-	masterRoutingKey := "master.robs-macbook-pro.host"
+	masterRoutingKey := fmt.Sprintf("master.%s.host", queue.Name)
 	if err = c.channel.QueueBind(
 		masterQueueName, // name of the queue
 		masterRoutingKey,        // bindingKey
@@ -244,14 +277,14 @@ func handle(deliveries <-chan amqp.Delivery, done chan error, c *Consumer) {
 		d.Ack(true)
 		res := ParseCommand{}
 		json.Unmarshal(d.Body, &res)
-		body_string := "test"
+		body_string := ""
 		respObj, err := res.ExecuteCommand()
 		if err != nil {
 			body_string = "Error occurred"
 		} else {
 			body_string, _ = respObj.Response()
 		}
-		masterRoutingKey := "master.robs-macbook-pro.host"
+		masterRoutingKey := fmt.Sprintf("master.%s", d.RoutingKey)
 		puberr := c.channel.Publish(
 			"chorizo",   // publish to an exchange
 			masterRoutingKey, // routing to 0 or more queues
@@ -267,9 +300,12 @@ func handle(deliveries <-chan amqp.Delivery, done chan error, c *Consumer) {
 				// a bunch of application/implementation-specific fields
 			},
 		) 
-		fmt.Println("Here")
 		if puberr != nil {
 			fmt.Println(fmt.Errorf("Exchange Publish: %s", puberr))
+		}
+		if res.Command == "start_reboot" {
+			fmt.Println("Start Reboot Now")
+
 		}
 	}
 	//log.Printf("handle: deliveries channel closed")
